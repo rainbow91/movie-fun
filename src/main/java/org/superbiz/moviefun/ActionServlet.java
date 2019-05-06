@@ -17,8 +17,9 @@
 package org.superbiz.moviefun;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import javax.ejb.EJB;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,13 +30,15 @@ import java.util.List;
 /**
  * @version $Revision$ $Date$
  */
+
+@Component
 public class ActionServlet extends HttpServlet {
 
     private static final long serialVersionUID = -5832176047021911038L;
 
     public static int PAGE_SIZE = 5;
 
-    @EJB
+    @Autowired
     private MoviesBean moviesBean;
 
     @Override
@@ -74,61 +77,60 @@ public class ActionServlet extends HttpServlet {
 
             response.sendRedirect("moviefun");
             return;
+        } else{
+                String key = request.getParameter("key");
+                String field = request.getParameter("field");
 
-        } else {
-            String key = request.getParameter("key");
-            String field = request.getParameter("field");
+                int count = 0;
 
-            int count = 0;
+                if (StringUtils.isEmpty(key) || StringUtils.isEmpty(field)) {
+                    count = moviesBean.countAll();
+                    key = "";
+                    field = "";
+                } else {
+                    count = moviesBean.count(field, key);
+                }
 
-            if (StringUtils.isEmpty(key) || StringUtils.isEmpty(field)) {
-                count = moviesBean.countAll();
-                key = "";
-                field = "";
-            } else {
-                count = moviesBean.count(field, key);
+                int page = 1;
+
+                try {
+                    page = Integer.parseInt(request.getParameter("page"));
+                } catch (Exception e) {
+                }
+
+                int pageCount = (count / PAGE_SIZE);
+                if (pageCount == 0 || count % PAGE_SIZE != 0) {
+                    pageCount++;
+                }
+
+                if (page < 1) {
+                    page = 1;
+                }
+
+                if (page > pageCount) {
+                    page = pageCount;
+                }
+
+                int start = (page - 1) * PAGE_SIZE;
+                List<Movie> range;
+
+                if (StringUtils.isEmpty(key) || StringUtils.isEmpty(field)) {
+                    range = moviesBean.findAll(start, PAGE_SIZE);
+                } else {
+                    range = moviesBean.findRange(field, key, start, PAGE_SIZE);
+                }
+
+                int end = start + range.size();
+
+                request.setAttribute("count", count);
+                request.setAttribute("start", start + 1);
+                request.setAttribute("end", end);
+                request.setAttribute("page", page);
+                request.setAttribute("pageCount", pageCount);
+                request.setAttribute("movies", range);
+                request.setAttribute("key", key);
+                request.setAttribute("field", field);
             }
-
-            int page = 1;
-
-            try {
-                page = Integer.parseInt(request.getParameter("page"));
-            } catch (Exception e) {
-            }
-
-            int pageCount = (count / PAGE_SIZE);
-            if (pageCount == 0 || count % PAGE_SIZE != 0) {
-                pageCount++;
-            }
-
-            if (page < 1) {
-                page = 1;
-            }
-
-            if (page > pageCount) {
-                page = pageCount;
-            }
-
-            int start = (page - 1) * PAGE_SIZE;
-            List<Movie> range;
-
-            if (StringUtils.isEmpty(key) || StringUtils.isEmpty(field)) {
-                range = moviesBean.findAll(start, PAGE_SIZE);
-            } else {
-                range = moviesBean.findRange(field, key, start, PAGE_SIZE);
-            }
-
-            int end = start + range.size();
-
-            request.setAttribute("count", count);
-            request.setAttribute("start", start + 1);
-            request.setAttribute("end", end);
-            request.setAttribute("page", page);
-            request.setAttribute("pageCount", pageCount);
-            request.setAttribute("movies", range);
-            request.setAttribute("key", key);
-            request.setAttribute("field", field);
-        }
 
         request.getRequestDispatcher("WEB-INF/moviefun.jsp").forward(request, response);
     }
