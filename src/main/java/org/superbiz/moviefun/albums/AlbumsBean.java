@@ -27,7 +27,7 @@ import java.util.List;
 @Repository
 public class AlbumsBean {
 
-    @PersistenceContext(unitName="album-mysql")
+    @PersistenceContext(unitName="albums")
     private EntityManager entityManager;
 
     public void addAlbum(Album album) {

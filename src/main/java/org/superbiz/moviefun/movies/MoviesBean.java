@@ -29,7 +29,7 @@ import java.util.List;
 @Repository
 public class MoviesBean {
 
-    @PersistenceContext(unitName="movie-mysql")
+    @PersistenceContext(unitName="movies")
     private EntityManager entityManager;
 
     public Movie find(Long id) {

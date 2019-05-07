@@ -43,19 +43,13 @@ public class HomeController {
 
     @GetMapping("/setup")
     public String setup(Map<String, Object> model) {
+        createMovies();
+        createAlbums();
+
         model.put("movies", moviesBean.getMovies());
         model.put("albums", albumsBean.getAlbums());
 
         return "setup";
-    }
-
-    private void createMovies() {
-        new TransactionTemplate(albumsTransactionManager).execute(status -> {
-            for (Movie movie : movieFixtures.load()) {
-                moviesBean.addMovie(movie);
-            }
-            return null;
-        });
     }
 
     private void createAlbums() {
@@ -63,7 +57,19 @@ public class HomeController {
             for (Album album : albumFixtures.load()) {
                 albumsBean.addAlbum(album);
             }
+
             return null;
         });
     }
+
+    private void createMovies() {
+        new TransactionTemplate(moviesTransactionManager).execute(status -> {
+            for (Movie movie : movieFixtures.load()) {
+                moviesBean.addMovie(movie);
+            }
+
+            return null;
+        });
+    }
+
 }
