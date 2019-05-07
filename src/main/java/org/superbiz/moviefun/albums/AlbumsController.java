@@ -14,7 +14,6 @@ public class AlbumsController {
         this.albumsBean = albumsBean;
     }
 
-
     @GetMapping("/albums")
     public String index(Map<String, Object> model) {
         model.put("albums", albumsBean.getAlbums());
