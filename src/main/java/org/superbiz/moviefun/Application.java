@@ -10,6 +10,7 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.superbiz.moviefun.blobstore.BlobStore;
 import org.superbiz.moviefun.blobstore.FileStore;
+import org.superbiz.moviefun.blobstore.S3Store;
 import org.superbiz.moviefun.blobstore.ServiceCredentials;
 
 @SpringBootApplication
@@ -45,6 +46,6 @@ public class Application {
             s3Client.setEndpoint(endpoint);
         }
 
-        return new FileStore(s3Client, photoStorageBucket);
+        return new S3Store(s3Client, photoStorageBucket);
     }
 }
