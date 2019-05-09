@@ -33,6 +33,7 @@ public class HomeController {
 
     @GetMapping("/setup")
     public String setup(Map<String, Object> model) {
+
         for (Movie movie : movieFixtures.load()) {
             moviesBean.addMovie(movie);
         }
