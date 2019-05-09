@@ -28,7 +28,8 @@ public class S3Store implements BlobStore {
     public void put(Blob blob) throws IOException {
         if (!s3Client.doesObjectExist(bucketName, blob.name)) {
             try {
-                s3Client.putObject(bucketName, blob.name, blob.inputStream, new ObjectMetadata());
+                s3Client.putObject(
+                        bucketName, blob.name, blob.inputStream), new ObjectMetadata());
             } catch(AmazonServiceException e){
                 System.err.println(e.getErrorMessage());
             }
@@ -43,7 +44,7 @@ public class S3Store implements BlobStore {
                 byte[] bytes = IOUtils.toByteArray(s3ObjectInputStream);
                 return Optional.of(new Blob(
                         name,
-                        new ByteArrayInputStream(bytes),
+                        bytes,
                         tika.detect(bytes)
                 ));
             }
@@ -59,6 +60,38 @@ public class S3Store implements BlobStore {
             s3Client.deleteObjects(deleteRequest);
         } catch (AmazonServiceException e) {
             System.err.println(e.getErrorMessage());
+        }
+    }
+
+    public static byte[] toByteArray(InputStream is)
+            throws IOException{
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        int reads = is.read();
+
+        while(reads != -1){
+            baos.write(reads);
+            reads = is.read();
+        }
+
+        return baos.toByteArray();
+
+    }
+    public static byte[] toInputStream(byte[] content) {
+        int size = content.length;
+        InputStream is = null;
+        byte[] b = new byte[size];
+        try {
+            is = new ByteArrayInputStream(content);
+            is.read(b);
+            System.out.println("Data Recovered: " + new String(b));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (is != null) is.close();
+            } catch (Exception ex) {
+
+            }
         }
     }
 }
