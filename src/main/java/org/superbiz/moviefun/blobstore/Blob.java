@@ -4,12 +4,12 @@ import java.io.InputStream;
 
 public class Blob {
     public final String name;
-    public final byte[] inputStream;
+    public final byte[] inputByteArray;
     public final String contentType;
 
-    public Blob(String name, byte[] inputStream, String contentType) {
+    public Blob(String name, byte[] inputByteArray, String contentType) {
         this.name = name;
-        this.inputStream = inputStream;
+        this.inputByteArray = inputByteArray;
         this.contentType = contentType;
     }
 }
