@@ -7,6 +7,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
+import javax.sql.DataSource;
+
 @Configuration
 @EnableAsync
 @EnableScheduling
@@ -18,8 +20,9 @@ public class AlbumsUpdateScheduler {
     private final AlbumsUpdater albumsUpdater;
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    public AlbumsUpdateScheduler(AlbumsUpdater albumsUpdater) {
+    public AlbumsUpdateScheduler(AlbumsUpdater albumsUpdater, DataSource datasource) {
         this.albumsUpdater = albumsUpdater;
+        this.
     }
 
 
