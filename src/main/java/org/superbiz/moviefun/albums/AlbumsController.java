@@ -1,6 +1,6 @@
 package org.superbiz.moviefun.albums;
+
 import org.apache.tika.Tika;
-import org.apache.tika.io.IOUtils;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -10,17 +10,17 @@ import org.springframework.web.multipart.MultipartFile;
 import org.superbiz.moviefun.blobstore.Blob;
 import org.superbiz.moviefun.blobstore.BlobStore;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.lang.ClassLoader.getSystemResource;
 import static java.lang.String.format;
-import static java.nio.file.Files.readAllBytes;
-import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 
 @Controller
 @RequestMapping("/albums")
@@ -28,6 +28,7 @@ public class AlbumsController {
 
     private final AlbumsBean albumsBean;
     private final BlobStore blobStore;
+    private final Tika tika = new Tika();
 
     public AlbumsController(AlbumsBean albumsBean, BlobStore blobStore){
         this.albumsBean = albumsBean;
@@ -56,9 +57,12 @@ public class AlbumsController {
 
     @PostMapping("/{albumId}/cover")
     public String uploadCover(@PathVariable long albumId, @RequestParam("file") MultipartFile uploadedFile) throws IOException {
+        byte[] byteArray = new byte[(int)uploadedFile.getSize()];
+        uploadedFile.getInputStream().read(byteArray);
+
         Blob coverBlob = new Blob(
                 getCoverBlobName(albumId),
-                uploadedFile.getInputStream(),
+                byteArray,
                 uploadedFile.getContentType()
         );
         blobStore.put(coverBlob);
@@ -71,12 +75,10 @@ public class AlbumsController {
         Optional<Blob> maybeCoverBlob = blobStore.get(getCoverBlobName(albumId));
         Blob coverBlob = maybeCoverBlob.orElseGet(this::buildDefaultCoverBlob);
 
-        byte[] imageBytes = IOUtils.toByteArray(coverBlob.inputStream);
-
         Path coverFilePath = getExistingCoverPath(albumId);
-        HttpHeaders headers = createImageHttpHeaders(coverFilePath, imageBytes);
+        HttpHeaders headers = createImageHttpHeaders(coverFilePath, coverBlob.byteArray);
 
-        return new HttpEntity<>(imageBytes, headers);
+        return new HttpEntity<>(coverBlob.byteArray, headers);
     }
 
     private String getCoverBlobName(long albumId) {
@@ -112,9 +114,22 @@ public class AlbumsController {
 
     private Blob buildDefaultCoverBlob() {
         ClassLoader classLoader = getClass().getClassLoader();
-        InputStream input = classLoader.getResourceAsStream("default-cover.jpg");
+        try (InputStream input = classLoader.getResourceAsStream("default-cover.jpg");
+             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();){
+            int reads = input.read();
+            while (reads != -1) {
+                byteArrayOutputStream.write(reads);
+                reads = input.read();
+            }
+            return new Blob(
+                    "default-cover",
+                    byteArrayOutputStream.toByteArray(),
+                    tika.detect(input)
+            );
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
 
-        return new Blob("default-cover", input, IMAGE_JPEG_VALUE);
     }
 }
-

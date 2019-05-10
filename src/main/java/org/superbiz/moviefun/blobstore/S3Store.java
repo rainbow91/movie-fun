@@ -1,18 +1,17 @@
 package org.superbiz.moviefun.blobstore;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import org.apache.tika.Tika;
-import org.apache.tika.io.IOUtils;
 
-import java.io.*;
-import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Optional;
-
-import static org.springframework.http.MediaType.IMAGE_JPEG_VALUE;
 
 public class S3Store implements BlobStore {
     private final Tika tika = new Tika();
@@ -28,7 +27,9 @@ public class S3Store implements BlobStore {
     public void put(Blob blob) throws IOException {
         if (!s3Client.doesObjectExist(bucketName, blob.name)) {
             try {
-                s3Client.putObject(bucketName, blob.name, blob.inputStream, new ObjectMetadata());
+                ObjectMetadata objectMetadata = new ObjectMetadata();
+                objectMetadata.setContentType(tika.detect(blob.byteArray));
+                s3Client.putObject(bucketName, blob.name, new ByteArrayInputStream(blob.byteArray), objectMetadata);
             } catch(AmazonServiceException e){
                 System.err.println(e.getErrorMessage());
             }
@@ -38,13 +39,20 @@ public class S3Store implements BlobStore {
     @Override
     public Optional<Blob> get(String name) throws IOException {
         if (s3Client.doesObjectExist(bucketName, name)) {
-            try (S3Object s3Object = s3Client.getObject(bucketName, name)) {
-                S3ObjectInputStream s3ObjectInputStream = s3Object.getObjectContent();
-                byte[] bytes = IOUtils.toByteArray(s3ObjectInputStream);
+            try (S3Object s3Object = s3Client.getObject(bucketName, name);
+                 ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();) {
+
+                S3ObjectInputStream content = s3Object.getObjectContent();
+                int reads = content.read();
+                while(reads != -1){
+                    byteArrayOutputStream.write(reads);
+                    reads = content.read();
+                }
+                byte[] byteArray = byteArrayOutputStream.toByteArray();
                 return Optional.of(new Blob(
                         name,
-                        new ByteArrayInputStream(bytes),
-                        tika.detect(bytes)
+                        byteArray,
+                        tika.detect(byteArray)
                 ));
             }
         }
