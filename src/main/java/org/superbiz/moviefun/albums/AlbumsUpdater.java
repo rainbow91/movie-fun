@@ -5,10 +5,12 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.superbiz.moviefun.blobstore.Blob;
 import org.superbiz.moviefun.blobstore.BlobStore;
 
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +27,8 @@ public class AlbumsUpdater {
     private final BlobStore blobStore;
     private final AlbumsBean albumsBean;
 
-    public AlbumsUpdater(BlobStore blobStore, AlbumsBean albumsBean) {
+    public AlbumsUpdater(BlobStore blobStore, AlbumsBean albumsBean, DataSource dataSource) {
+
         this.blobStore = blobStore;
         this.albumsBean = albumsBean;
 
@@ -40,6 +43,7 @@ public class AlbumsUpdater {
     }
 
     public void update() throws IOException {
+
         Optional<Blob> maybeBlob = blobStore.get("albums.csv");
 
         if (!maybeBlob.isPresent()) {
@@ -54,6 +58,7 @@ public class AlbumsUpdater {
         deleteOldAlbums(albumsToHave, albumsWeHave);
         updateExistingAlbums(albumsToHave, albumsWeHave);
     }
+
 
 
     private void createNewAlbums(List<Album> albumsToHave, List<Album> albumsWeHave) {
